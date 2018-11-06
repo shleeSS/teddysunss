@@ -4,17 +4,17 @@ export PATH
 #=================================================================#
 #   System Required:  CentOS 6+, Debian 7+, Ubuntu 12+            #
 #   Description: One click Install Shadowsocks-Python server      #
-#   Author: Teddysun <i@teddysun.com>                             #
+#   Author: shlee <i@sdgoo.com>                                   #
 #   Thanks: @clowwindy <https://twitter.com/clowwindy>            #
-#   Intro:  https://teddysun.com/342.html                         #
+#   Intro:  https://sdgoo.com/342.html                            #
 #=================================================================#
 
 clear
 echo
 echo "#############################################################"
 echo "# One click Install Shadowsocks-Python server               #"
-echo "# Intro: https://teddysun.com/342.html                      #"
-echo "# Author: Teddysun <i@teddysun.com>                         #"
+echo "# Intro: https://sdgoo.com/342.html                         #"
+echo "# Author: shlee <i@sdgoo.com>                               #"
 echo "# Github: https://github.com/shadowsocks/shadowsocks        #"
 echo "#############################################################"
 echo
@@ -58,6 +58,8 @@ disable_selinux(){
         sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
         setenforce 0
     fi
+    echo '>>>>>>SELinux has been disabled!'
+    echo ">>>>>>-------------------<<<<<<<"
 }
 
 #Check system
@@ -90,15 +92,18 @@ check_sys(){
         release="centos"
         systemPackage="yum"
     fi
-
-    if [[ "${checkType}" == "sysRelease" ]]; then
-        if [ "${value}" == "${release}" ]; then
+    
+    echo ">>>>>>Check system is "$release
+    echo ">>>>>>-------------------<<<<<<<"
+    
+    if [[ ${checkType} == "sysRelease" ]]; then
+        if [ "$value" == "$release" ]; then
             return 0
         else
             return 1
         fi
-    elif [[ "${checkType}" == "packageManager" ]]; then
-        if [ "${value}" == "${systemPackage}" ]; then
+    elif [[ ${checkType} == "packageManager" ]]; then
+        if [ "$value" == "$systemPackage" ]; then
             return 0
         else
             return 1
@@ -131,6 +136,7 @@ centosversion(){
     fi
 }
 
+
 # Get public IP address
 get_ip(){
     local IP=$( ip addr | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | egrep -v "^192\.168|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-2]\.|^10\.|^127\.|^255\.|^0\." | head -n 1 )
@@ -151,6 +157,8 @@ get_char(){
 
 # Pre-installation settings
 pre_install(){
+		echo ">>>>>>pre-install dependecies"
+    echo ">>>>>>-------------------<<<<<<<"
     if check_sys packageManager yum || check_sys packageManager apt; then
         # Not support CentOS 5
         if centosversion 5; then
@@ -162,9 +170,9 @@ pre_install(){
         exit 1
     fi
     # Set shadowsocks config password
-    echo "Please enter password for shadowsocks-python"
-    read -p "(Default password: teddysun.com):" shadowsockspwd
-    [ -z "${shadowsockspwd}" ] && shadowsockspwd="teddysun.com"
+    echo "Please input password for shadowsocks-python"
+    read -p "(Default password: sdgoo.com):" shadowsockspwd
+    [ -z "${shadowsockspwd}" ] && shadowsockspwd="sdgoo.com"
     echo
     echo "---------------------------"
     echo "password = ${shadowsockspwd}"
@@ -173,22 +181,24 @@ pre_install(){
     # Set shadowsocks config port
     while true
     do
-    dport=$(shuf -i 9000-19999 -n 1)
-    echo "Please enter a port for shadowsocks-python [1-65535]"
-    read -p "(Default port: ${dport}):" shadowsocksport
-    [ -z "$shadowsocksport" ] && shadowsocksport=${dport}
+    echo "Please input port for shadowsocks-python [1-65535]"
+    read -p "(Default port: 8989):" shadowsocksport
+    [ -z "$shadowsocksport" ] && shadowsocksport="8989"
     expr ${shadowsocksport} + 1 &>/dev/null
     if [ $? -eq 0 ]; then
-        if [ ${shadowsocksport} -ge 1 ] && [ ${shadowsocksport} -le 65535 ] && [ ${shadowsocksport:0:1} != 0 ]; then
+        if [ ${shadowsocksport} -ge 1 ] && [ ${shadowsocksport} -le 65535 ]; then
             echo
             echo "---------------------------"
             echo "port = ${shadowsocksport}"
             echo "---------------------------"
             echo
             break
+        else
+            echo -e "[${red}Error${plain}] Input error, please input a number between 1 and 65535"
         fi
+    else
+        echo -e "[${red}Error${plain}] Input error, please input a number between 1 and 65535"
     fi
-    echo -e "[${red}Error${plain}] Please enter a correct number [1-65535]"
     done
 
     # Set shadowsocks config stream ciphers
@@ -203,11 +213,11 @@ pre_install(){
     [ -z "$pick" ] && pick=1
     expr ${pick} + 1 &>/dev/null
     if [ $? -ne 0 ]; then
-        echo -e "[${red}Error${plain}] Please enter a number"
+        echo -e "[${red}Error${plain}] Input error, please input a number"
         continue
     fi
     if [[ "$pick" -lt 1 || "$pick" -gt ${#ciphers[@]} ]]; then
-        echo -e "[${red}Error${plain}] Please enter a number between 1 and ${#ciphers[@]}"
+        echo -e "[${red}Error${plain}] Input error, please input a number between 1 and ${#ciphers[@]}"
         continue
     fi
     shadowsockscipher=${ciphers[$pick-1]}
@@ -234,24 +244,26 @@ pre_install(){
 
 # Download files
 download_files(){
+    echo ">>>>>>Download files"
+    echo ">>>>>>-------------------<<<<<<<"
     # Download libsodium file
     if ! wget --no-check-certificate -O ${libsodium_file}.tar.gz ${libsodium_url}; then
         echo -e "[${red}Error${plain}] Failed to download ${libsodium_file}.tar.gz!"
         exit 1
     fi
     # Download Shadowsocks file
-    if ! wget --no-check-certificate -O shadowsocks-master.zip https://github.com/shadowsocks/shadowsocks/archive/master.zip; then
+    if ! wget --no-check-certificate -O shleeSS-master.zip https://github.com/shleeSS/shleeSS/archive/master.zip; then
         echo -e "[${red}Error${plain}] Failed to download shadowsocks python file!"
         exit 1
     fi
     # Download Shadowsocks init script
     if check_sys packageManager yum; then
-        if ! wget --no-check-certificate https://raw.githubusercontent.com/teddysun/shadowsocks_install/master/shadowsocks -O /etc/init.d/shadowsocks; then
+        if ! wget --no-check-certificate https://raw.githubusercontent.com/shleeSS/teddysunss/master/shadowsocks -O /etc/init.d/shadowsocks; then
             echo -e "[${red}Error${plain}] Failed to download shadowsocks chkconfig file!"
             exit 1
         fi
     elif check_sys packageManager apt; then
-        if ! wget --no-check-certificate https://raw.githubusercontent.com/teddysun/shadowsocks_install/master/shadowsocks-debian -O /etc/init.d/shadowsocks; then
+        if ! wget --no-check-certificate https://raw.githubusercontent.com/shleeSS/teddysunss/master/shadowsocks-debian -O /etc/init.d/shadowsocks; then
             echo -e "[${red}Error${plain}] Failed to download shadowsocks chkconfig file!"
             exit 1
         fi
@@ -323,14 +335,14 @@ install(){
     ldconfig
     # Install Shadowsocks
     cd ${cur_dir}
-    unzip -q shadowsocks-master.zip
+    unzip -q shleeSS-master.zip
     if [ $? -ne 0 ];then
-        echo -e "[${red}Error${plain}] unzip shadowsocks-master.zip failed! please check unzip command."
+        echo -e "[${red}Error${plain}] unzip shleeSS-master.zip failed! please check unzip command."
         install_cleanup
         exit 1
     fi
 
-    cd ${cur_dir}/shadowsocks-master
+    cd ${cur_dir}/shleeSS-master
     python setup.py install --record /usr/local/shadowsocks_install.log
 
     if [ -f /usr/bin/ssserver ] || [ -f /usr/local/bin/ssserver ]; then
@@ -344,7 +356,7 @@ install(){
         /etc/init.d/shadowsocks start
     else
         echo
-        echo -e "[${red}Error${plain}] Shadowsocks install failed! please visit https://teddysun.com/342.html and contact."
+        echo -e "[${red}Error${plain}] Shadowsocks install failed! please visit https://sdgoo.com/342.html and contact."
         install_cleanup
         exit 1
     fi
@@ -357,7 +369,7 @@ install(){
     echo -e "Your Password         : \033[41;37m ${shadowsockspwd} \033[0m"
     echo -e "Your Encryption Method: \033[41;37m ${shadowsockscipher} \033[0m"
     echo
-    echo "Welcome to visit:https://teddysun.com/342.html"
+    echo "Welcome to visit:https://sdgoo.com/342.html"
     echo "Enjoy it!"
     echo
 }
@@ -365,7 +377,7 @@ install(){
 # Install cleanup
 install_cleanup(){
     cd ${cur_dir}
-    rm -rf shadowsocks-master.zip shadowsocks-master ${libsodium_file}.tar.gz ${libsodium_file}
+    rm -rf shleeSS-master.zip shleeSS-master ${libsodium_file}.tar.gz ${libsodium_file}
 }
 
 # Uninstall Shadowsocks
